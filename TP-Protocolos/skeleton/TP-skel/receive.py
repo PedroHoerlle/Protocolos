@@ -47,7 +47,7 @@ class IPOption_MRI(IPOption):
 								   length_from=lambda pkt:pkt.count*4) ]
 """
 
-""" class INT_filho(Packet):
+class INT_filho(Packet):
 	fields_desc = [ BitField("swid", 0, 32),
 					BitField("porta_entrada", 0, 9),
 					BitField("porta_saida", 0, 9),
@@ -55,21 +55,16 @@ class IPOption_MRI(IPOption):
 					BitField("qdepth", 0, 32),
 					BitField("padding", 0, 6)]
 	def extract_padding(self, p):
-		return "", p """
-
-""" class INT(Packet):
-	name = "INT"
-	fields_desc = [ BitField("quantidade_filhos", 0, 16),
-					BitField("next_protocol", 0, 16),
-					PacketListField("filhos",
-					 				[],
-									INT_filho,
-									count_from=lambda pkt:(pkt.quantidade_filhos*1))] """
+		return "", p
 
 class INT(Packet):
 	name = "INT"
 	fields_desc = [ BitField("quantidade_filhos", 0, 32),
-					BitField("next_protocol", 0, 16)]
+					BitField("next_protocol", 0, 16),
+					PacketListField("filhos",
+					 				[],
+									INT_filho,
+									count_from=lambda pkt:(pkt.quantidade_filhos*1))]
 
 def handle_pkt(pkt):
 	if TCP in pkt and pkt[TCP].dport == 1234:

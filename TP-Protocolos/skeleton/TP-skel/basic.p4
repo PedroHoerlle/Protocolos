@@ -5,7 +5,7 @@
 const bit<16> TYPE_IPV4 = 0x800; // | 2048  | Internet Protocol version 4 (IPv4) as defined in RFC 791.
 const bit<16> TYPE_INT = 0x88B5; // | 34997 | Local Experimental EtherType 1 as defined in IEEE Std 802.
 
-#define MAX_HOPS 9
+#define MAX_HOPS 3
 
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
@@ -26,14 +26,14 @@ header pai_t {
 	bit<16> next_protocol;
 }
 
-/* header filho_t {
+header filho_t {
 	bit<32> swid;
 	bit<9> porta_entrada;
 	bit<9> porta_saida;
 	bit<48> timestamp;
 	bit<32> qdepth;
 	bit<6> padding; // O tamanho do cabecalho em bits deve ser multiplo de 8 | de 130 para 136 = 17 bytes
-} */
+}
 
 header ipv4_t {
 	bit<4>    version;
@@ -61,7 +61,7 @@ struct metadata {
 struct headers {
 	ethernet_t	ethernet;
 	pai_t		pai;
-	//filho_t[MAX_HOPS]	filho;
+	filho_t[MAX_HOPS]	filho;
 	ipv4_t		ipv4;
 }
 
@@ -91,19 +91,19 @@ parser MyParser(packet_in packet,
 		packet.extract(hdr.pai);
 		meta.parser_metadata.remaining = hdr.pai.quantidade_filhos;
 		transition select(meta.parser_metadata.remaining) {
-			0: parse_ipv4;
-			default: parse_ipv4; //parse_filho;
+			0: parse_ipv4; //caso para testes, pai nunca vai ter 0 filhos nesse state
+			default: parse_filho; //parse_filho;
 		}
 	}
 
-/* 	state parse_filho {
+ 	state parse_filho {
 		packet.extract(hdr.filho.next);
 		meta.parser_metadata.remaining = meta.parser_metadata.remaining - 1;
 		transition select(meta.parser_metadata.remaining) {
 			0: parse_ipv4;
 			default: parse_filho;
 		}
-	} */
+	}
 
 	state parse_ipv4 {
 		packet.extract(hdr.ipv4);
@@ -167,18 +167,18 @@ control MyEgress(inout headers hdr,
 				 inout standard_metadata_t standard_metadata) {
 	action add_pai(bit<32> swid) {
 		hdr.pai.setValid();
-		hdr.pai.quantidade_filhos = 0;
+		hdr.pai.quantidade_filhos = 1;
 		hdr.pai.next_protocol = hdr.ethernet.etherType;
 
 		hdr.ethernet.etherType = TYPE_INT;
 
-/* 		hdr.filho.push_front(1);
+ 		hdr.filho.push_front(1);
 		hdr.filho[0].setValid();
-		hdr.filho[0].swid = 7; //swid | ver melhor jeito de pegar o swid;
+		hdr.filho[0].swid = swid; 
 		hdr.filho[0].porta_entrada = standard_metadata.ingress_port;
 		hdr.filho[0].porta_saida = standard_metadata.egress_spec;
 		hdr.filho[0].timestamp = standard_metadata.egress_global_timestamp;
-		hdr.filho[0].qdepth = standard_metadata.deq_timedelta; */
+		hdr.filho[0].qdepth = standard_metadata.deq_timedelta;
 	}
 
 /* 	action add_filho() {
@@ -232,7 +232,7 @@ control MyDeparser(packet_out packet, in headers hdr) {
 	apply {
 		packet.emit(hdr.ethernet);
 		packet.emit(hdr.pai);
-		//packet.emit(hdr.filho);
+		packet.emit(hdr.filho);
 		packet.emit(hdr.ipv4);
 	}
 }
