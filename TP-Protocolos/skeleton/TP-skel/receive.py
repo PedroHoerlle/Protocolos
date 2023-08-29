@@ -4,16 +4,21 @@ import sys
 
 from scapy.all import (
     TCP,
+    IP,
     FieldLenField,
     FieldListField,
     IntField,
     IPOption,
     ShortField,
     get_if_list,
+    Packet,
+    Ether,
+    BitField,
+    bind_layers,
+    PacketListField,
     sniff
 )
 from scapy.layers.inet import _IPOption_HDR
-
 
 def get_if():
     ifs=get_if_list()
@@ -27,6 +32,7 @@ def get_if():
         exit(1)
     return iface
 
+"""
 class IPOption_MRI(IPOption):
     name = "MRI"
     option = 31
@@ -39,6 +45,32 @@ class IPOption_MRI(IPOption):
                                    [],
                                    IntField("", 0),
                                    length_from=lambda pkt:pkt.count*4) ]
+"""
+
+""" class INT_filho(Packet):
+	fields_desc = [ BitField("swid", 0, 32),
+					BitField("porta_entrada", 0, 9),
+					BitField("porta_saida", 0, 9),
+					BitField("timestamp", 0, 48),
+					BitField("qdepth", 0, 32),
+					BitField("padding", 0, 6)]
+	def extract_padding(self, p):
+		return "", p """
+
+""" class INT(Packet):
+	name = "INT"
+	fields_desc = [ BitField("quantidade_filhos", 0, 16),
+					BitField("next_protocol", 0, 16),
+					PacketListField("filhos",
+                     				[],
+                                    INT_filho,
+                                    count_from=lambda pkt:(pkt.quantidade_filhos*1))] """
+
+class INT(Packet):
+    name = "INT"
+    fields_desc = [ BitField("quantidade_filhos", 0, 32),
+					BitField("next_protocol", 0, 16)]
+
 def handle_pkt(pkt):
     if TCP in pkt and pkt[TCP].dport == 1234:
         print("got a packet")
@@ -46,12 +78,13 @@ def handle_pkt(pkt):
     #    hexdump(pkt)
         sys.stdout.flush()
 
-
 def main():
     ifaces = [i for i in os.listdir('/sys/class/net/') if 'eth' in i]
     iface = ifaces[0]
     print("sniffing on %s" % iface)
     sys.stdout.flush()
+    bind_layers(Ether, INT, type=0x88B5)
+    bind_layers(INT, IP, next_protocol=0x800)
     sniff(iface = iface,
           prn = lambda x: handle_pkt(x))
 
