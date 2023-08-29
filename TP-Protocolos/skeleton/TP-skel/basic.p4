@@ -165,7 +165,7 @@ control MyIngress(inout headers hdr,
 control MyEgress(inout headers hdr,
 				 inout metadata meta,
 				 inout standard_metadata_t standard_metadata) {
-	action add_pai() {
+	action add_pai(bit<32> swid) {
 		hdr.pai.setValid();
 		hdr.pai.quantidade_filhos = 0;
 		hdr.pai.next_protocol = hdr.ethernet.etherType;
@@ -185,9 +185,17 @@ control MyEgress(inout headers hdr,
 //lorem ipsum
 	} */
 
+	table pai_table {
+		actions = {
+			add_pai;
+			NoAction;
+		}
+		default_action = NoAction();
+	}
+	
 	apply {
 		if (hdr.pai.isValid() == false) {
-			add_pai();
+			pai_table.apply();
 		}
 	}
 }
