@@ -92,7 +92,7 @@ parser MyParser(packet_in packet,
 		meta.parser_metadata.remaining = hdr.pai.quantidade_filhos;
 		transition select(meta.parser_metadata.remaining) {
 			0: parse_ipv4; //caso para testes, pai nunca vai ter 0 filhos nesse state
-			default: parse_filho; //parse_filho;
+			default: parse_filho;
 		}
 	}
 
@@ -165,12 +165,16 @@ control MyIngress(inout headers hdr,
 control MyEgress(inout headers hdr,
 				 inout metadata meta,
 				 inout standard_metadata_t standard_metadata) {
-	action add_pai(bit<32> swid) {
+	action add_pai() {
 		hdr.pai.setValid();
-		hdr.pai.quantidade_filhos = 1;
+		hdr.pai.quantidade_filhos = 0;
 		hdr.pai.next_protocol = hdr.ethernet.etherType;
 
 		hdr.ethernet.etherType = TYPE_INT;
+	}
+
+ 	action add_filho(bit<32> swid) {
+		hdr.pai.quantidade_filhos = hdr.pai.quantidade_filhos + 1;
 
  		hdr.filho.push_front(1);
 		hdr.filho[0].setValid();
@@ -179,23 +183,22 @@ control MyEgress(inout headers hdr,
 		hdr.filho[0].porta_saida = standard_metadata.egress_spec;
 		hdr.filho[0].timestamp = standard_metadata.egress_global_timestamp;
 		hdr.filho[0].qdepth = standard_metadata.deq_timedelta;
-	}
+		} 
 
-/* 	action add_filho() {
-//lorem ipsum
-	} */
-
-	table pai_table {
+	table filho_table {
 		actions = {
-			add_pai;
+			add_filho;
 			NoAction;
 		}
 		default_action = NoAction();
 	}
 	
 	apply {
-		if (hdr.pai.isValid() == false) {
-			pai_table.apply();
+		if (hdr.pai.isValid()) {
+			filho_table.apply();
+		} else {
+			add_pai();
+			filho_table.apply();
 		}
 	}
 }

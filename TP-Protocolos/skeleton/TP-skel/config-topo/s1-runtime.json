@@ -4,9 +4,9 @@
   "bmv2_json": "build/basic.json",
   "table_entries": [
     {
-		"table": "MyEgress.pai_table",
+		"table": "MyEgress.filho_table",
 		"default_action": true,
-		"action_name": "MyEgress.add_pai",
+		"action_name": "MyEgress.add_filho",
 		"action_params": {
 			"swid": 1
 		 }
