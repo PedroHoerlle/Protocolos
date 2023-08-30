@@ -31,7 +31,7 @@ header filho_t {
 	bit<9> porta_entrada;
 	bit<9> porta_saida;
 	bit<48> timestamp;
-	bit<32> qdepth;
+	bit<32> qdepth; // O tempo em ms que o pacote ficou na fila
 	bit<6> padding; // O tamanho do cabecalho em bits deve ser multiplo de 8 | de 130 para 136 = 17 bytes
 }
 
@@ -178,7 +178,7 @@ control MyEgress(inout headers hdr,
 
  		hdr.filho.push_front(1);
 		hdr.filho[0].setValid();
-		hdr.filho[0].swid = swid; 
+		hdr.filho[0].swid = swid;
 		hdr.filho[0].porta_entrada = standard_metadata.ingress_port;
 		hdr.filho[0].porta_saida = standard_metadata.egress_spec;
 		hdr.filho[0].timestamp = standard_metadata.egress_global_timestamp;
